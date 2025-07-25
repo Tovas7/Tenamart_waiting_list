@@ -27,7 +27,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('waiting-list', WaitingListController::class);
 
-    // Insight routes (as discussed previously)
+    // New combined stats endpoint
+    Route::get('waiting-list/stats', [WaitingListController::class, 'getStats']); // <-- This is the new line for combined stats
+
+    // Individual Insight routes (as discussed previously - these can be kept or removed if 'stats' is comprehensive)
     Route::get('waiting-list/insights/total-signups', [WaitingListController::class, 'getTotalSignups']);
     Route::get('waiting-list/insights/signups-by-source', [WaitingListController::class, 'getSignupsBySource']);
     Route::get('waiting-list/insights/signups-by-month', [WaitingListController::class, 'getSignupsByMonth']);
