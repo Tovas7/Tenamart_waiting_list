@@ -9,6 +9,7 @@ use App\Http\Resources\WaitingListResource;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon; // Import Carbon for date manipulation
 use Illuminate\Support\Facades\DB; // Import DB facade for raw queries
+use Symfony\Component\HttpFoundation\StreamedResponse; // Import for streamed response
 
 class WaitingListController extends Controller
 {
@@ -159,8 +160,6 @@ class WaitingListController extends Controller
         // Get the day(s) with the highest number of signups in the last 30 days
         // We use the $dailySignupsRaw collection for this, as it contains only the days with actual signups.
         $peakSignups = $dailySignupsRaw->sortDesc()->take(5); // Get top 5 peak days (date => count)
-        // If you only wanted the single peak day:
-        // $singlePeakDay = $dailySignupsRaw->sortByDesc('count')->first();
 
 
         return response()->json([
@@ -169,6 +168,49 @@ class WaitingListController extends Controller
             'daily_signup_trends_last_30_days' => $dailyTrend,
             'peak_signup_days' => $peakSignups,
         ]);
+    }
+
+    /**
+     * Export all waiting list signups to a CSV file.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function exportCsv(Request $request)
+    {
+        $fileName = 'tenamart_waiting_list_' . Carbon::now()->format('Ymd_His') . '.csv';
+
+        $headers = array(
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        );
+
+        $allSignups = WaitingList::all(); // Fetch all signups
+
+        $callback = function() use ($allSignups) {
+            $file = fopen('php://output', 'w'); // Open a file pointer to the output stream
+
+            // Add CSV headers
+            fputcsv($file, ['ID', 'Name', 'Email', 'Signup Source', 'Created At', 'Updated At']);
+
+            // Add data rows
+            foreach ($allSignups as $signup) {
+                fputcsv($file, [
+                    $signup->id,
+                    $signup->name,
+                    $signup->email,
+                    $signup->signup_source,
+                    $signup->created_at->format('Y-m-d H:i:s'),
+                    $signup->updated_at->format('Y-m-d H:i:s'),
+                ]);
+            }
+            fclose($file); // Close the file pointer
+        };
+
+        return new StreamedResponse($callback, 200, $headers);
     }
 
     // Optional: If you want to keep these separate insight methods in addition to getStats

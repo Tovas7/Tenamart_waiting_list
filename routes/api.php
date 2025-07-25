@@ -27,8 +27,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('waiting-list', WaitingListController::class);
 
-    // New combined stats endpoint
-    Route::get('waiting-list/stats', [WaitingListController::class, 'getStats']); // <-- This is the new line for combined stats
+    // Combined stats endpoint
+    Route::get('waiting-list/stats', [WaitingListController::class, 'getStats']);
+
+    // New CSV Export endpoint
+    Route::get('waiting-list/export-csv', [WaitingListController::class, 'exportCsv']); // <-- This is the added line
 
     // Individual Insight routes (as discussed previously - these can be kept or removed if 'stats' is comprehensive)
     Route::get('waiting-list/insights/total-signups', [WaitingListController::class, 'getTotalSignups']);
